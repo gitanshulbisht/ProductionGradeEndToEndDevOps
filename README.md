@@ -82,6 +82,8 @@ kubectl apply -f gitops/2-apps/argocd-project.yaml
 kubectl apply -f gitops/2-apps/opentelemetry-demo.yaml
 ```
 
+![ArgoCD Dashboard](images/argocd-dashboard.png)
+
 ---
 
 ## 5. Accessing the Application & Observability Tools
@@ -96,13 +98,21 @@ Our GitOps configuration explicitly instructs AWS to provision a public Elastic 
 
 * **Astronomy Shop Frontend:** `http://<YOUR_AWS_ELB_URL>:8080/`
 * **Grafana Dashboards:** `http://<YOUR_AWS_ELB_URL>:8080/grafana/`
+
+![Grafana RED Metrics](images/grafana-red.png)
+![Grafana Cart Exemplars](images/grafana-cart.png)
+
 * **Jaeger Distributed Tracing:** `http://<YOUR_AWS_ELB_URL>:8080/jaeger/ui/`
+
+![Jaeger Distributed Tracing](images/jaeger-tracing.png)
 
 ---
 
 ## 6. Continuous Integration (GitHub Actions)
 
 This repository includes a GitHub Actions CI pipeline (`.github/workflows/ci.yml`) that triggers on every push or pull request to the `main` branch. 
+
+![GitHub Actions Pipeline](images/github-actions.png)
 
 The pipeline ensures code quality and safety by running:
 1. **Terraform Validation:** Enforces formatting (`terraform fmt`) and validates the AWS infrastructure code (`terraform validate`).
