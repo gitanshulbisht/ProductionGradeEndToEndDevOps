@@ -146,11 +146,14 @@ To optimize costs and enable advanced Layer 7 routing, the platform uses the **A
 
 Ensure you destroy all resources when you are finished to prevent unexpected billing.
 
-1. **Delete the ArgoCD Application First:**
-   ArgoCD application finalizers can block namespace deletion. Delete the application first to properly clean up Kubernetes resources (including the AWS Load Balancer):
+1. **Delete the ArgoCD Applications First:**
+   ArgoCD application finalizers can block namespace deletion, and external resources (like the Application Load Balancer) must be gracefully deleted by the cluster before the cluster itself is destroyed.
    ```bash
    kubectl delete -f gitops/2-apps/opentelemetry-demo.yaml
+   kubectl delete -f gitops/2-apps/aws-lbc.yaml
    ```
+   *(Wait ~3 minutes for the Load Balancer to fully delete in AWS before proceeding)*
+
 2. **Destroy Infrastructure:**
    Navigate back to the terraform directory and issue the destroy command:
    ```bash
