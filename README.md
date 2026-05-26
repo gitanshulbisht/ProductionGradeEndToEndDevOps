@@ -7,7 +7,66 @@ This project showcases a production-ready cloud platform built with a modern sep
 * **Infrastructure layer:** Handled by Terraform, employing official HashiCorp AWS modules for VPC (spanning 2 Availability Zones with a single NAT Gateway to reduce cost) and EKS (v1.30, utilizing `t3.large` nodes suitable for resource-heavy observability tools).
 * **Delivery layer:** Handled by ArgoCD, pulling stable upstream manifests and syncing helm-based deployments with self-healing and automated pruning enabled.
 
-## 2. Business Value
+## 2. Architecture Diagram
+
+```mermaid
+flowchart LR
+    subgraph Users[User Traffic]
+        Internet((Internet))
+    end
+
+    subgraph GitHub[GitOps Source of Truth]
+        Repo[(GitHub Repository\nTerraform & YAML)]
+    end
+
+    subgraph AWS[AWS Cloud]
+        ALB[Application Load Balancer]
+        
+        subgraph VPC[Virtual Private Cloud]
+            subgraph EKS[Amazon EKS Cluster]
+                subgraph ArgoCD_NS[argocd namespace]
+                    ArgoCD[ArgoCD Controller]
+                end
+
+                subgraph KubeSystem_NS[kube-system namespace]
+                    LBC[AWS Load Balancer Controller]
+                end
+
+                subgraph OTel_NS[otel-demo namespace]
+                    FrontendProxy[Frontend Proxy]
+                    Frontend[Frontend App]
+                    Backend[Backend Microservices\nCart, Payment, etc.]
+                    Obs[Observability Stack\nGrafana, Jaeger, Prometheus]
+                    
+                    FrontendProxy --> Frontend
+                    Frontend --> Backend
+                    Backend -.->|Telemetry| Obs
+                    Frontend -.->|Telemetry| Obs
+                end
+            end
+        end
+    end
+
+    Internet -->|HTTP Request| ALB
+    ALB -->|Ingress| FrontendProxy
+    
+    LBC -.->|Provisions & Manages| ALB
+    ArgoCD -.->|Monitors & Syncs| Repo
+    ArgoCD =.=>|Deploys| LBC
+    ArgoCD =.=>|Deploys| OTel_NS
+
+    classDef aws fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:#232F3E;
+    classDef k8s fill:#326CE5,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef git fill:#2dba4e,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef bg fill:#f4f4f4,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5;
+    
+    class ALB aws;
+    class ArgoCD,LBC,FrontendProxy,Frontend,Backend,Obs k8s;
+    class Repo git;
+    class VPC,EKS,ArgoCD_NS,KubeSystem_NS,OTel_NS bg;
+```
+
+## 3. Business Value
 
 * **Automated Provisioning:** Reduces deployment time from days to minutes. All infrastructure is codified, minimizing configuration drift and human error.
 * **GitOps Security & Reliability:** Applications are managed via declarative source control. ArgoCD constantly monitors the cluster state and automatically heals discrepancies against the desired state defined in Git.
