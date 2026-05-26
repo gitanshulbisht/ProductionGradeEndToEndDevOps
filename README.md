@@ -116,7 +116,17 @@ For a detailed step-by-step walkthrough of exactly how this architecture was bui
 
 ---
 
-## 8. Cost Warning & Teardown (CRITICAL)
+## 8. Upgrading to Application Load Balancer (ALB)
+
+To optimize costs and enable advanced Layer 7 routing, the platform uses the **AWS Load Balancer Controller** instead of basic Classic Load Balancers.
+
+1. **IAM Role (Terraform):** An IAM Role for Service Accounts (IRSA) was provisioned in Terraform and linked to the EKS OIDC provider.
+2. **ALB Controller (GitOps):** An ArgoCD application (`gitops/2-apps/aws-lbc.yaml`) automatically deploys the controller into the `kube-system` namespace.
+3. **Ingress Migration (GitOps):** The OpenTelemetry Demo is configured to use a Kubernetes `Ingress` resource with the `alb` ingress class, instructing AWS to provision a modern Application Load Balancer.
+
+---
+
+## 9. Cost Warning & Teardown (CRITICAL)
 
 > [!WARNING]
 > **AWS charges apply for resources running in this project.** An EKS control plane, `t3.large` worker nodes, a NAT Gateway, and an ELB are not part of the AWS Free Tier. They cost approximately **$0.35/hour** ($250/month).
