@@ -17,3 +17,8 @@ output "configure_kubectl" {
   description = "Command to configure kubectl to access the EKS cluster"
   value       = "aws eks update-kubeconfig --region ${var.aws_region} --name ${module.eks.cluster_name}"
 }
+
+output "aws_load_balancer_controller_role_arn" {
+  description = "IAM Role ARN for AWS Load Balancer Controller"
+  value       = module.load_balancer_controller_irsa_role.iam_role_arn
+}
