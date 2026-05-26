@@ -14,9 +14,21 @@ spec:
     helm:
       values: |
         components:
-          frontendProxy:
+          frontend-proxy:
             service:
-              type: LoadBalancer
+              type: ClusterIP
+            ingress:
+              enabled: true
+              ingressClassName: alb
+              annotations:
+                alb.ingress.kubernetes.io/scheme: internet-facing
+                alb.ingress.kubernetes.io/target-type: ip
+              hosts:
+                - host: ""
+                  paths:
+                    - path: /*
+                      pathType: ImplementationSpecific
+                      port: 8080
   destination:
     server: https://kubernetes.default.svc
     namespace: otel-demo
