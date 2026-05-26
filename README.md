@@ -108,7 +108,7 @@ For a detailed step-by-step walkthrough of exactly how this architecture was bui
 
 ---
 
-## 6. Cost Warning & Teardown (CRITICAL)
+## 8. Cost Warning & Teardown (CRITICAL)
 
 > [!WARNING]
 > **AWS charges apply for resources running in this project.** An EKS control plane, `t3.large` worker nodes, a NAT Gateway, and an ELB are not part of the AWS Free Tier. They cost approximately **$0.35/hour** ($250/month).
