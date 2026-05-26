@@ -52,8 +52,8 @@ flowchart LR
     
     LBC -.->|Provisions & Manages| ALB
     ArgoCD -.->|Monitors & Syncs| Repo
-    ArgoCD =.=>|Deploys| LBC
-    ArgoCD =.=>|Deploys| OTel_NS
+    ArgoCD -.->|Deploys| LBC
+    ArgoCD -.->|Deploys| OTel_NS
 
     classDef aws fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:#232F3E;
     classDef k8s fill:#326CE5,stroke:#fff,stroke-width:2px,color:#fff;
