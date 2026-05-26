@@ -11,6 +11,12 @@ spec:
     repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
     chart: opentelemetry-demo
     targetRevision: "*" # Uses the latest version of the helm chart
+    helm:
+      values: |
+        components:
+          frontendProxy:
+            service:
+              type: LoadBalancer
   destination:
     server: https://kubernetes.default.svc
     namespace: otel-demo

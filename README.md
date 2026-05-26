@@ -12,18 +12,25 @@ This project showcases a production-ready cloud platform built with a modern sep
 * **Automated Provisioning:** Reduces deployment time from days to minutes. All infrastructure is codified, minimizing configuration drift and human error.
 * **GitOps Security & Reliability:** Applications are managed via declarative source control. ArgoCD constantly monitors the cluster state and automatically heals discrepancies against the desired state defined in Git.
 * **Full-Stack Observability:** The OpenTelemetry Demo provides immediate, actionable insights into microservice interactions, traces, and metrics, ensuring high availability and rapid debugging for business-critical applications.
-* **Cost Efficiency:** Using a single NAT Gateway and appropriately sized `t3.large` EC2 spot/on-demand nodes strikes a balance between performance and expenditure.
 
 ---
 
-## 3. Deployment Guide: Infrastructure (Terraform)
+## 3. Deployment Guide: Prerequisites & Infrastructure (Terraform)
 
 ### Prerequisites
-* AWS CLI installed and configured (`aws configure`).
-* Terraform installed (v1.3.0+).
-* `kubectl` installed.
+You must have the AWS CLI, Terraform, and `kubectl` installed on your local machine.
 
-### Steps
+*If you are on a Mac, you can install them via Homebrew (Note: Terraform must be installed from HashiCorp's tap):*
+```bash
+brew tap hashicorp/tap
+brew install hashicorp/tap/terraform awscli
+```
+Once installed, configure your AWS credentials to link your terminal to your AWS account:
+```bash
+aws configure
+```
+
+### Infrastructure Provisioning Steps
 1. Navigate to the Terraform directory:
    ```bash
    cd terraform
@@ -32,27 +39,15 @@ This project showcases a production-ready cloud platform built with a modern sep
    ```bash
    terraform init
    ```
-3. (Optional) Customize variables. Copy the example file and modify as needed:
-   ```bash
-   cp terraform.tfvars.example terraform.tfvars
-   ```
-4. Review the infrastructure plan:
-   ```bash
-   terraform plan
-   ```
-5. Apply the configuration to provision the VPC and EKS cluster:
+3. Apply the configuration to provision the VPC and EKS cluster:
    ```bash
    terraform apply -auto-approve
    ```
-   > **Note:** This process typically takes 15-20 minutes.
+   > **Note:** This process typically takes 10-15 minutes.
 
-6. Configure `kubectl` using the output command from Terraform:
+4. Once complete, configure `kubectl` to communicate with your new cluster:
    ```bash
-   $(terraform output -raw configure_kubectl)
-   ```
-   Verify cluster access:
-   ```bash
-   kubectl get nodes
+   aws eks update-kubeconfig --region us-east-1 --name otel-demo-cluster
    ```
 
 ---
@@ -60,58 +55,52 @@ This project showcases a production-ready cloud platform built with a modern sep
 ## 4. Deployment Guide: Platform Delivery (GitOps)
 
 ### Install ArgoCD
-ArgoCD will manage the deployment of our applications.
+Because ArgoCD's Custom Resource Definitions (CRDs) are extremely large, we use Kubernetes Server-Side Apply to bypass annotation size limits.
+
 1. Create the `argocd` namespace:
    ```bash
    kubectl create namespace argocd
    ```
-2. Apply the initial ArgoCD manifests:
+2. Apply the initial ArgoCD manifests using Server-Side Apply:
    ```bash
-   kubectl apply -k gitops/1-argocd-init
-   ```
-3. Wait for the ArgoCD server to be ready:
-   ```bash
-   kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=argocd-server -n argocd --timeout=300s
+   kubectl apply --server-side=true --force-conflicts -k gitops/1-argocd-init
    ```
 
 ### Deploy the OpenTelemetry Demo
-With ArgoCD running, apply the GitOps manifests to deploy the OpenTelemetry Application.
-1. Apply the ArgoCD Project and Application manifests:
-   ```bash
-   kubectl apply -f gitops/2-apps/argocd-project.yaml
-   kubectl apply -f gitops/2-apps/opentelemetry-demo.yaml
-   ```
-2. ArgoCD will automatically detect the Application Custom Resource, create the `otel-demo` namespace, and begin syncing the Helm chart.
-   
-3. Monitor the deployment progress:
-   ```bash
-   kubectl get pods -n otel-demo -w
-   ```
+With ArgoCD running, apply the GitOps manifests. ArgoCD will automatically detect the Application Custom Resource, create the `otel-demo` namespace, and deploy all 25+ microservices.
+
+```bash
+kubectl apply -f gitops/2-apps/argocd-project.yaml
+kubectl apply -f gitops/2-apps/opentelemetry-demo.yaml
+```
 
 ---
 
-## 5. Accessing the Application
+## 5. Accessing the Application & Observability Tools
 
-Once all pods in the `otel-demo` namespace are in the `Running` state, port-forward the OpenTelemetry Demo frontend to view the application on your local machine.
+Our GitOps configuration explicitly instructs AWS to provision a public Elastic Load Balancer (ELB) for the application frontend proxy.
 
-```bash
-kubectl port-forward svc/opentelemetry-demo-frontend 8080:8080 -n otel-demo
-```
-Open your web browser and navigate to: [http://localhost:8080](http://localhost:8080)
+1. Run the following command and wait for the `EXTERNAL-IP` to populate with an AWS domain name (it usually takes 2-3 minutes):
+   ```bash
+   kubectl get svc frontend-proxy -n otel-demo -w
+   ```
+2. Copy the Load Balancer URL. You can access the different components of the platform by appending the correct paths to your URL.
 
-*The OpenTelemetry UI (Jaeger/Grafana) can also be accessed via their respective services in the same namespace depending on the Helm chart defaults.*
+* **Astronomy Shop Frontend:** `http://<YOUR_AWS_ELB_URL>:8080/`
+* **Grafana Dashboards:** `http://<YOUR_AWS_ELB_URL>:8080/grafana/`
+* **Jaeger Distributed Tracing:** `http://<YOUR_AWS_ELB_URL>:8080/jaeger/ui/`
 
 ---
 
 ## 6. Cost Warning & Teardown (CRITICAL)
 
 > [!WARNING]
-> **AWS charges apply for resources running in this project.** An EKS control plane and `t3.large` worker nodes are not part of the AWS Free Tier. You will incur charges for the time they are active.
+> **AWS charges apply for resources running in this project.** An EKS control plane, `t3.large` worker nodes, a NAT Gateway, and an ELB are not part of the AWS Free Tier. They cost approximately **$0.35/hour** ($250/month).
 
-When you are finished testing the demo, ensure you destroy all resources to prevent unexpected billing.
+Ensure you destroy all resources when you are finished to prevent unexpected billing.
 
-1. **Delete the ArgoCD Application First (Important):**
-   ArgoCD application finalizers can block namespace deletion. Delete the application first to properly clean up Kubernetes resources:
+1. **Delete the ArgoCD Application First:**
+   ArgoCD application finalizers can block namespace deletion. Delete the application first to properly clean up Kubernetes resources (including the AWS Load Balancer):
    ```bash
    kubectl delete -f gitops/2-apps/opentelemetry-demo.yaml
    ```
@@ -121,4 +110,3 @@ When you are finished testing the demo, ensure you destroy all resources to prev
    cd terraform
    terraform destroy -auto-approve
    ```
-3. Verify that the VPC and EKS cluster have been successfully terminated in your AWS Console.
