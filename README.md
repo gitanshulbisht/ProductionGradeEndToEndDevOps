@@ -92,6 +92,22 @@ Our GitOps configuration explicitly instructs AWS to provision a public Elastic 
 
 ---
 
+## 6. Continuous Integration (GitHub Actions)
+
+This repository includes a GitHub Actions CI pipeline (`.github/workflows/ci.yml`) that triggers on every push or pull request to the `main` branch. 
+
+The pipeline ensures code quality and safety by running:
+1. **Terraform Validation:** Enforces formatting (`terraform fmt`) and validates the AWS infrastructure code (`terraform validate`).
+2. **YAML Linting:** Scans the `gitops/` directory with `yamllint` to ensure all Kubernetes manifests are syntactically valid.
+
+---
+
+## 7. Comprehensive Deployment Journey
+
+For a detailed step-by-step walkthrough of exactly how this architecture was built, including the real-world roadblocks encountered (like macOS dependency issues, ArgoCD CRD size limits, and local port conflicts) and how they were solved, please see the [Deployment Journey & Troubleshooting Guide](deployment_journey.md).
+
+---
+
 ## 6. Cost Warning & Teardown (CRITICAL)
 
 > [!WARNING]
