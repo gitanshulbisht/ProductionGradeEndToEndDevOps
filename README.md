@@ -10,60 +10,82 @@ This project showcases a production-ready cloud platform built with a modern sep
 ## 2. Architecture Diagram
 
 ```mermaid
-flowchart LR
-    subgraph Users[User Traffic]
-        Internet((Internet))
-    end
-
+flowchart TB
+    Internet((Internet))
+    
     subgraph GitHub[GitOps Source of Truth]
         Repo[(GitHub Repository\nTerraform & YAML)]
     end
 
-    subgraph AWS[AWS Cloud]
+    subgraph AWS[AWS Cloud Region]
+        IGW[Internet Gateway]
         ALB[Application Load Balancer]
         
         subgraph VPC[Virtual Private Cloud]
-            subgraph EKS[Amazon EKS Cluster]
-                subgraph ArgoCD_NS[argocd namespace]
-                    ArgoCD[ArgoCD Controller]
+            
+            subgraph AZ1[Availability Zone 1]
+                subgraph PubSub1[Public Subnet 1]
+                    NAT[NAT Gateway]
                 end
-
-                subgraph KubeSystem_NS[kube-system namespace]
-                    LBC[AWS Load Balancer Controller]
-                end
-
-                subgraph OTel_NS[otel-demo namespace]
+                
+                subgraph PrivSub1[Private Subnet 1]
+                    Node1[EKS Worker Node 1]
                     FrontendProxy[Frontend Proxy]
                     Frontend[Frontend App]
-                    Backend[Backend Microservices\nCart, Payment, etc.]
+                end
+            end
+            
+            subgraph AZ2[Availability Zone 2]
+                subgraph PubSub2[Public Subnet 2]
+                end
+                
+                subgraph PrivSub2[Private Subnet 2]
+                    Node2[EKS Worker Node 2]
+                    Backend[Backend Microservices]
                     Obs[Observability Stack\nGrafana, Jaeger, Prometheus]
-                    
-                    FrontendProxy --> Frontend
-                    Frontend --> Backend
-                    Backend -.->|Telemetry| Obs
-                    Frontend -.->|Telemetry| Obs
+                    ArgoCD[ArgoCD Controller]
+                    LBC[AWS LBC]
                 end
             end
         end
     end
 
-    Internet -->|HTTP Request| ALB
-    ALB -->|Ingress| FrontendProxy
+    %% Networking
+    Internet <--> IGW
+    IGW <--> ALB
+    ALB -->|Ingress Routing| FrontendProxy
     
-    LBC -.->|Provisions & Manages| ALB
+    %% NAT Flow
+    Node1 -.->|Outbound| NAT
+    Node2 -.->|Outbound| NAT
+    NAT -.-> IGW
+    
+    %% Application Flow
+    FrontendProxy --> Frontend
+    Frontend --> Backend
+    Backend -.->|Telemetry| Obs
+    Frontend -.->|Telemetry| Obs
+    
+    %% GitOps Flow
+    LBC -.->|Provisions| ALB
     ArgoCD -.->|Monitors & Syncs| Repo
     ArgoCD -.->|Deploys| LBC
-    ArgoCD -.->|Deploys| OTel_NS
+    ArgoCD -.->|Deploys Apps| FrontendProxy
 
-    classDef aws fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:#232F3E;
-    classDef k8s fill:#326CE5,stroke:#fff,stroke-width:2px,color:#fff;
-    classDef git fill:#2dba4e,stroke:#fff,stroke-width:2px,color:#fff;
-    classDef bg fill:#f4f4f4,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5;
+    %% Styling
+    classDef aws fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:#232F3E,stroke-dasharray: 0;
+    classDef k8s fill:#326CE5,stroke:#fff,stroke-width:2px,color:#fff,stroke-dasharray: 0;
+    classDef git fill:#2dba4e,stroke:#fff,stroke-width:2px,color:#fff,stroke-dasharray: 0;
+    classDef pub fill:#e1f5fe,stroke:#0288d1,stroke-width:2px,stroke-dasharray: 5 5;
+    classDef priv fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,stroke-dasharray: 5 5;
+    classDef az fill:#f4f4f4,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5;
     
-    class ALB aws;
-    class ArgoCD,LBC,FrontendProxy,Frontend,Backend,Obs k8s;
+    class ALB,IGW,NAT aws;
+    class ArgoCD,LBC,FrontendProxy,Frontend,Backend,Obs,Node1,Node2 k8s;
     class Repo git;
-    class VPC,EKS,ArgoCD_NS,KubeSystem_NS,OTel_NS bg;
+    class PubSub1,PubSub2 pub;
+    class PrivSub1,PrivSub2 priv;
+    class AZ1,AZ2 az;
 ```
 
 ## 3. Business Value
