@@ -124,6 +124,9 @@ To optimize costs and enable advanced Layer 7 routing, the platform uses the **A
 2. **ALB Controller (GitOps):** An ArgoCD application (`gitops/2-apps/aws-lbc.yaml`) automatically deploys the controller into the `kube-system` namespace.
 3. **Ingress Migration (GitOps):** The OpenTelemetry Demo is configured to use a Kubernetes `Ingress` resource with the `alb` ingress class, instructing AWS to provision a modern Application Load Balancer.
 
+> [!NOTE]
+> **Strict Helm Schemas in GitOps:** During the migration, the OpenTelemetry v2.2.0 Helm chart rejected the initial configuration due to a strict JSON Schema validation (the component key changed from `frontendProxy` to `frontend-proxy`). Thanks to ArgoCD, the deployment failed gracefully without taking down the existing ELB. Updating the manifest to strictly match the new schema allowed ArgoCD to provision the ALB perfectly.
+
 ---
 
 ## 9. Cost Warning & Teardown (CRITICAL)
