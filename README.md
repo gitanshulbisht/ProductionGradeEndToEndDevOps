@@ -13,6 +13,14 @@ This project showcases a production-ready cloud platform built with a modern sep
 * **GitOps Security & Reliability:** Applications are managed via declarative source control. ArgoCD constantly monitors the cluster state and automatically heals discrepancies against the desired state defined in Git.
 * **Full-Stack Observability:** The OpenTelemetry Demo provides immediate, actionable insights into microservice interactions, traces, and metrics, ensuring high availability and rapid debugging for business-critical applications.
 
+### 🏢 Architecture Best Practice: Separation of Concerns
+
+This project strictly follows the industry-standard **Separation of Concerns** by acting as a dedicated **Platform/GitOps Repository**, completely separate from the application source code repository. 
+
+* **Different Lifecycles:** Application code (Java, Go, Node.js) changes rapidly (multiple times a day), while Platform code (Terraform, Kubernetes) changes deliberately and slowly. Separating them prevents minor application typos from triggering massive infrastructure pipelines.
+* **Security & Blast Radius:** Application developers are granted full access to merge application code in their repo, but are restricted from modifying the VPC, tearing down EKS clusters, or changing IAM permissions in this Platform repo.
+* **The GitOps Standard:** When application developers finish writing code, their CI pipeline builds a new Docker image and automatically opens a Pull Request in this Platform Repository to update the image tag. ArgoCD then detects the YAML change here and securely syncs it to the cluster.
+
 ---
 
 ## 3. Deployment Guide: Prerequisites & Infrastructure (Terraform)
