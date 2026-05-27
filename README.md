@@ -163,8 +163,6 @@ kubectl apply -f gitops/2-apps/argocd-project.yaml
 kubectl apply -f gitops/2-apps/opentelemetry-demo.yaml
 ```
 
-![ArgoCD Dashboard](images/argocd-dashboard.png)
-
 ---
 
 ## 5. Accessing the Application & Observability Tools
@@ -178,14 +176,17 @@ Our GitOps configuration explicitly instructs AWS to provision a public Elastic 
 2. Copy the Load Balancer URL. You can access the different components of the platform by appending the correct paths to your URL.
 
 * **Astronomy Shop Frontend:** `http://<YOUR_AWS_ELB_URL>:8080/`
+
+![Astronomy Shop Frontend](images/Astronomy%20Shop%20Frontend.png)
+
 * **Grafana Dashboards:** `http://<YOUR_AWS_ELB_URL>:8080/grafana/`
 
-![Grafana RED Metrics](images/grafana-red.png)
-![Grafana Cart Exemplars](images/grafana-cart.png)
+![Grafana RED Metrics](images/Grafana%20Demo%20Dashboard.png)
+![Grafana Cart Exemplars](images/Grafana.png)
 
 * **Jaeger Distributed Tracing:** `http://<YOUR_AWS_ELB_URL>:8080/jaeger/ui/`
 
-![Jaeger Distributed Tracing](images/jaeger-tracing.png)
+![Jaeger Distributed Tracing](images/Jaegar%20Tracing.png)
 
 ---
 
@@ -193,7 +194,7 @@ Our GitOps configuration explicitly instructs AWS to provision a public Elastic 
 
 This repository includes a GitHub Actions CI pipeline (`.github/workflows/ci.yml`) that triggers on every push or pull request to the `main` branch. 
 
-![GitHub Actions Pipeline](images/github-actions.png)
+![GitHub Actions Pipeline](images/GIthub%20Actions%20CI.png)
 
 The pipeline ensures code quality and safety by running:
 1. **Terraform Validation:** Enforces formatting (`terraform fmt`) and validates the AWS infrastructure code (`terraform validate`).
